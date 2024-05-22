@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Inicial - Forms</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <!-- Custom CSS for Animations -->
+    <style>
+        .fade-in {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    <!-- Import Firebase -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+        import { getDatabase, ref, onValue, onChildAdded, onChildChanged, onChildRemoved, remove } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDL-0ILT1y1KCbWLT1jCQC7RMZMudZyTj4",
+            authDomain: "gerentedeforms-b7987.firebaseapp.com",
+            databaseURL: "https://gerentedeforms-b7987-default-rtdb.firebaseio.com",
+            projectId: "gerentedeforms-b7987",
+            storageBucket: "gerentedeforms-b7987.appspot.com",
+            messagingSenderId: "45661644905",
+            appId: "1:45661644905:web:7abe60018e47d5636ddaf8"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Reference to your database path
+        const dbRef = ref(database, '/'); // Substitua pelo caminho desejado no banco de dados
+
+        // Function to create card element
+        function createCard(key, data) {
+            const card = document.createElement('div');
+            card.className = 'card bg-white shadow-md rounded-lg p-6 mb-4 fade-in relative';
+            card.innerHTML = `
+                <button class="absolute top-4 right-4 text-red-600 hover:text-red-800" onclick="removeData('${key}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+                <h2 class="text-2xl font-semibold mb-2 text-gray-800">${data.form_fullname_value}</h2>
+                <p class="text-gray-600"><strong>Email:</strong> ${data.form_email_value}</p>
+                <p class="text-gray-600"><strong>Message:</strong> ${data.form_message_value}</p>
+                <p class="text-gray-600"><strong>Form Name:</strong> ${data.form_name}</p>
+                <p class="text-gray-600"><strong>Device:</strong> ${data.user_device}</p>
+                <p class="text-gray-600"><strong>IP Address:</strong> ${data.user_ipaddress}</p>
+            `;
+            card.setAttribute('data-key', key);
+            return card;
+        }
+
+        // Remove data from Firebase
+        window.removeData = function(key) {
+            const dataRef = ref(database, '/' + key);
+            remove(dataRef).then(() => {
+                console.log('Data removed successfully');
+            }).catch((error) => {
+                console.error('Error removing data:', error);
+            });
+        };
+
+        // Listening for changes in the database
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            const dataDisplay = document.getElementById('data-display');
+            dataDisplay.innerHTML = '';
+            for (const key in data) {
+                if (data.hasOwnProperty(key)) {
+                    const card = createCard(key, data[key]);
+                    dataDisplay.appendChild(card);
+                }
+            }
+        });
+
+        // Optional: Listening for child added
+        onChildAdded(dbRef, (snapshot) => {
+            const newChild = snapshot.val();
+            const key = snapshot.key;
+            const dataDisplay = document.getElementById('data-display');
+            const card = createCard(key, newChild);
+            dataDisplay.appendChild(card);
+        });
+
+        // Optional: Listening for child changed
+        onChildChanged(dbRef, (snapshot) => {
+            const changedChild = snapshot.val();
+            const key = snapshot.key;
+            const dataDisplay = document.getElementById('data-display');
+            const existingCard = dataDisplay.querySelector(`[data-key="${key}"]`);
+            if (existingCard) {
+                const newCard = createCard(key, changedChild);
+                existingCard.replaceWith(newCard);
+            }
+        });
+
+        // Optional: Listening for child removed
+        onChildRemoved(dbRef, (snapshot) => {
+            const key = snapshot.key;
+            const dataDisplay = document.getElementById('data-display');
+            const existingCard = dataDisplay.querySelector(`[data-key="${key}"]`);
+            if (existingCard) {
+                dataDisplay.removeChild(existingCard);
+            }
+        });
+    </script>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-4">
+        <div class="bg-white shadow-lg rounded-xl p-6">
+            <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Dados submetidos no form</h1>
+            <div id="data-display" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap and Tailwind CSS JS (Optional for some components) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
